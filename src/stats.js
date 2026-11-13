@@ -38,11 +38,13 @@ export function describe(values) {
   if (values.length === 0) {
     throw new RangeError("values が空です");
   }
-  if (!values.every((value) => typeof value === "number" && Number.isFinite(value))) {
+  // every は配列の穴を飛ばすので、先に Array.from でコピーして穴を undefined にしてから確かめる
+  const copied = Array.from(values);
+  if (!copied.every((value) => typeof value === "number" && Number.isFinite(value))) {
     throw new TypeError("values には有限の数値だけを入れてください");
   }
 
-  const sorted = [...values].sort((a, b) => a - b);
+  const sorted = copied.sort((a, b) => a - b);
   const count = sorted.length;
   const sum = sorted.reduce((total, value) => total + value, 0);
   const mean = sum / count;

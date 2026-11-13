@@ -101,7 +101,29 @@ test("describe は四分位数の補間を位置の端数に応じて行う", ()
 });
 
 test("describe は空配列で例外を投げる", () => {
-  assert.throws(() => describe([]));
+  assert.throws(() => describe([]), RangeError);
+});
+
+test("describe は配列でない入力で TypeError を投げる", () => {
+  for (const input of [null, undefined, "1,2,3", 3, { 0: 1, length: 1 }, new Set([1, 2])]) {
+    assert.throws(() => describe(input), TypeError, `input=${String(input)}`);
+  }
+});
+
+test("describe は有限の数値でない要素を含むとき TypeError を投げる", () => {
+  const inputs = [
+    [1, "2", 3],
+    [1, NaN, 3],
+    [1, Infinity, 3],
+    [1, -Infinity, 3],
+    [1, null, 3],
+    [1, undefined, 3],
+    [1, , 3], // 穴のある配列
+    new Array(3), // 穴だけの配列
+  ];
+  for (const [index, input] of inputs.entries()) {
+    assert.throws(() => describe(input), TypeError, `inputs[${index}]`);
+  }
 });
 
 test("describe は要素が1つのとき分散と標準偏差を NaN にする", () => {
