@@ -17,6 +17,7 @@ const KEYS = [
   "stdDev",
   "q1",
   "q3",
+  "cv",
 ].sort();
 
 // 浮動小数点の誤差を許して比べる
@@ -184,4 +185,24 @@ test("describe はすべて同じ値のとき範囲・分散・標準偏差を 0
   assert.deepEqual(result.mode, [4]);
   assert.equal(result.q1, 4);
   assert.equal(result.q3, 4);
+});
+
+// 要件15：変動係数（cv）は、要件11の母集団の標準偏差を平均値で割った値
+// 平均値が 0 のときや負のときの扱いは要件に無いので、ここでは確かめない
+test("describe は変動係数を標準偏差÷平均値で求める", () => {
+  // 標準偏差 2、平均値 5
+  const result = describe([2, 4, 4, 4, 5, 5, 7, 9]);
+  assertClose(result.cv, 0.4, "cv");
+  assertClose(result.cv, result.stdDev / result.mean, "cv = stdDev / mean");
+});
+
+test("describe は変動係数を母集団の標準偏差（n で割る）から求める", () => {
+  // 平均値 3、母集団の標準偏差 √2
+  const result = describe([5, 1, 4, 2, 3]);
+  assertClose(result.cv, Math.sqrt(2) / 3, "cv");
+});
+
+test("describe はばらつきが無いとき変動係数を 0 にする", () => {
+  assertClose(describe([7]).cv, 0, "cv of [7]");
+  assertClose(describe([4, 4, 4]).cv, 0, "cv of [4,4,4]");
 });
