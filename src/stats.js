@@ -29,7 +29,8 @@ function modes(sorted) {
  * 数値の配列の統計値をまとめて返す。入力の配列は書き換えない。
  * @param {number[]} values 1つ以上の有限の数値
  * @returns {{count:number,sum:number,mean:number,median:number,mode:number[],
- *   min:number,max:number,range:number,variance:number,stdDev:number,q1:number,q3:number}}
+ *   min:number,max:number,range:number,variance:number,stdDev:number,q1:number,q3:number,
+ *   cv:number}}
  */
 export function describe(values) {
   if (!Array.isArray(values)) {
@@ -50,11 +51,12 @@ export function describe(values) {
   const mean = sum / count;
   const min = sorted[0];
   const max = sorted[count - 1];
-  // 標本分散（n-1 で割る）。要素が1つのときは NaN
-  const variance =
-    count > 1
-      ? sorted.reduce((total, value) => total + (value - mean) ** 2, 0) / (count - 1)
-      : NaN;
+  // 母集団の分散（n で割る）。要素が1つのときは偏差が 0 なので 0 になる
+  const variance = sorted.reduce((total, value) => total + (value - mean) ** 2, 0) / count;
+  const stdDev = Math.sqrt(variance);
+  // 変動係数（標準偏差÷平均値）。平均値が 0 のときは割れないので NaN にする。
+  // 平均値が負のときは、式のとおり負の値になる
+  const cv = mean === 0 ? NaN : stdDev / mean;
 
   return {
     count,
@@ -66,8 +68,9 @@ export function describe(values) {
     max,
     range: max - min,
     variance,
-    stdDev: Math.sqrt(variance),
+    stdDev,
     q1: quantile(sorted, 0.25),
     q3: quantile(sorted, 0.75),
+    cv,
   };
 }
