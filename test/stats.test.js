@@ -50,8 +50,8 @@ test("describe は代表的な統計値をまとめて正しく計算する", ()
   assert.equal(result.min, 2);
   assert.equal(result.max, 9);
   assert.equal(result.range, 7);
-  assertClose(result.variance, 32 / 7, "variance");
-  assertClose(result.stdDev, Math.sqrt(32 / 7), "stdDev");
+  assertClose(result.variance, 32 / 8, "variance");
+  assertClose(result.stdDev, Math.sqrt(32 / 8), "stdDev");
   assertClose(result.q1, 4, "q1");
   assertClose(result.q3, 5.5, "q3");
 });
@@ -69,8 +69,8 @@ test("describe は並んでいない入力でも同じ結果を返し、入力�
   assert.equal(result.min, 2);
   assert.equal(result.max, 9);
   assert.equal(result.range, 7);
-  assertClose(result.variance, 32 / 7, "variance");
-  assertClose(result.stdDev, Math.sqrt(32 / 7), "stdDev");
+  assertClose(result.variance, 32 / 8, "variance");
+  assertClose(result.stdDev, Math.sqrt(32 / 8), "stdDev");
   assertClose(result.q1, 4, "q1");
   assertClose(result.q3, 5.5, "q3");
 });
@@ -79,8 +79,8 @@ test("describe は要素数が奇数のとき中央の値を中央値にする",
   const result = describe([5, 1, 4, 2, 3]);
   assert.equal(result.median, 3);
   assert.equal(result.mean, 3);
-  assertClose(result.variance, 2.5, "variance");
-  assertClose(result.stdDev, Math.sqrt(2.5), "stdDev");
+  assertClose(result.variance, 10 / 5, "variance");
+  assertClose(result.stdDev, Math.sqrt(10 / 5), "stdDev");
   assertClose(result.q1, 2, "q1");
   assertClose(result.q3, 4, "q3");
 });
@@ -126,7 +126,7 @@ test("describe は有限の数値でない要素を含むとき TypeError を投
   }
 });
 
-test("describe は要素が1つのとき分散と標準偏差を NaN にする", () => {
+test("describe は要素が1つのとき分散と標準偏差を 0 にする", () => {
   const result = describe([7]);
   assert.equal(result.count, 1);
   assert.equal(result.sum, 7);
@@ -136,8 +136,8 @@ test("describe は要素が1つのとき分散と標準偏差を NaN にする",
   assert.equal(result.min, 7);
   assert.equal(result.max, 7);
   assert.equal(result.range, 0);
-  assert.ok(Number.isNaN(result.variance), "variance は NaN");
-  assert.ok(Number.isNaN(result.stdDev), "stdDev は NaN");
+  assert.equal(result.variance, 0);
+  assert.equal(result.stdDev, 0);
   assert.equal(result.q1, 7);
   assert.equal(result.q3, 7);
 });
@@ -169,8 +169,8 @@ test("describe は負の数と小数を扱える", () => {
   assert.equal(result.max, 2.5);
   assert.equal(result.range, 4);
   // 偏差の2乗の和: 1.890625*2 + 0.015625 + 6.890625 = 10.6875
-  assertClose(result.variance, 10.6875 / 3, "variance");
-  assertClose(result.stdDev, Math.sqrt(10.6875 / 3), "stdDev");
+  assertClose(result.variance, 10.6875 / 4, "variance");
+  assertClose(result.stdDev, Math.sqrt(10.6875 / 4), "stdDev");
   // 並べると [-1.5, -1.5, 0, 2.5]。q1 位置 0.75 → -1.5, q3 位置 2.25 → 0.625
   assertClose(result.q1, -1.5, "q1");
   assertClose(result.q3, 0.625, "q3");
