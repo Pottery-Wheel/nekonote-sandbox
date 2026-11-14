@@ -36,8 +36,8 @@ function withoutTexts(source) {
     result = result.replace(pattern, "$1$2");
   }
   const description = /(<p(?:\s[^>]*)?>)\s*数値をカンマか空白で区切って入力してください。[^<]*(<\/p>)/gi;
-  // issue #21 で足す一文の要素は、この比べ方の外にする（test/index-html-note.test.js で確かめる）。
-  const note = /\n[ \t]*<([a-z][a-z0-9]*)(?:\s[^>]*)?>\s*計算結果は、入力した数値から計算した統計値です。\s*<\/\1>/gi;
+  // issue #21 で足す一文の行（属性の無い p 要素）は、この比べ方の外にする（test/index-html-note.test.js で確かめる）。
+  const note = "\n    <p>計算結果は、入力した数値から計算した統計値です。</p>";
   return result.replace(description, "$1$2").replace(note, "");
 }
 

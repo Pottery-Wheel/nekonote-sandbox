@@ -15,11 +15,9 @@ const before = readFileSync(
 const BUTTON_END = "</button>";
 const RESULT_START = '<div id="result"';
 
-// 一文だけを文言に持つ要素（1行に書かれたもの）。行頭の改行と字下げも含めて取り出す。
-const NOTE_ELEMENT = new RegExp(
-  `\\n[ \\t]*<([a-z][a-z0-9]*)(?:\\s[^>]*)?>\\s*${NOTE_TEXT}\\s*</\\1>`,
-  "gi",
-);
+// 足す一文の行そのもの（属性の無い p 要素）。行頭の改行と字下げも含める。
+// hidden や style などの属性を付けたり、ほかの要素に変えたりすると、この行と一致しなくなる。
+const NOTE_LINE = `\n    <p>${NOTE_TEXT}</p>`;
 
 function count(source, text) {
   return source.split(text).length - 1;
@@ -27,7 +25,7 @@ function count(source, text) {
 
 test("index.html に「計算結果は、入力した数値から計算した統計値です。」という一文がひとつある", () => {
   assert.equal(count(html, NOTE_TEXT), 1);
-  assert.equal([...html.matchAll(NOTE_ELEMENT)].length, 1, "一文だけを文言に持つ要素がひとつ");
+  assert.equal(count(html, NOTE_LINE), 1, "一文は属性の無い p 要素として1行でひとつ");
 });
 
 test("一文は計算ボタンの下、計算結果の表（#result）の上にある", () => {
@@ -44,6 +42,7 @@ test("変更前の index.html には一文が無い", () => {
   assert.equal(count(before, NOTE_TEXT), 0);
 });
 
-test("index.html から一文の要素を除くと、変更前と同じ（入力欄・計算ボタン・計算結果の表などは変わらない）", () => {
-  assert.equal(html.replace(NOTE_ELEMENT, ""), before);
+test("index.html から一文の行を除くと、変更前と同じ（入力欄・計算ボタン・計算結果の表などは変わらない）", () => {
+  assert.equal(count(html, NOTE_LINE), 1, "一文の行はちょうど1回");
+  assert.equal(html.replace(NOTE_LINE, ""), before);
 });
