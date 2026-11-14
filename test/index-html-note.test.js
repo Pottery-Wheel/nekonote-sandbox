@@ -19,6 +19,9 @@ const RESULT_START = '<div id="result"';
 // hidden や style などの属性を付けたり、ほかの要素に変えたりすると、この行と一致しなくなる。
 const NOTE_LINE = `\n    <p>${NOTE_TEXT}</p>`;
 
+// issue #29 で足す一文の行（属性の無い p 要素）は、この比べ方の外にする（test/index-html-privacy-note.test.js で確かめる）。
+const PRIVACY_NOTE_LINE = /\n[ \t]*<p>入力した数値は、このページの中だけで計算し、外部には送りません。<\/p>/;
+
 function count(source, text) {
   return source.split(text).length - 1;
 }
@@ -44,5 +47,5 @@ test("変更前の index.html には一文が無い", () => {
 
 test("index.html から一文の行を除くと、変更前と同じ（入力欄・計算ボタン・計算結果の表などは変わらない）", () => {
   assert.equal(count(html, NOTE_LINE), 1, "一文の行はちょうど1回");
-  assert.equal(html.replace(NOTE_LINE, ""), before);
+  assert.equal(html.replace(PRIVACY_NOTE_LINE, "").replace(NOTE_LINE, ""), before);
 });
