@@ -13,6 +13,13 @@ const before = readFileSync(
 
 const TAGS = ["h1", "title"];
 
+// issue #60 で変える script（type=module）と style の中身は、この比べ方の外にする（test/index-html-empty-input.test.js で確かめる）。
+function withoutScriptAndStyle(source) {
+  return source
+    .replace(/(<script type="module">)[\s\S]*?(<\/script>)/g, "$1$2")
+    .replace(/(<style>)[\s\S]*?(<\/style>)/g, "$1$2");
+}
+
 const DESCRIPTION_ORIGINAL = "数値をカンマか空白で区切って入力してください。";
 const DESCRIPTION_TEXT = `${DESCRIPTION_ORIGINAL}（例：4 8 15）`;
 
@@ -30,7 +37,7 @@ function elementTexts(source, tag) {
 
 // h1 要素と title 要素の文言、説明文の p 要素の文言だけを空にする。タグそのものと属性は残す。
 function withoutTexts(source) {
-  let result = source;
+  let result = withoutScriptAndStyle(source);
   for (const tag of TAGS) {
     const pattern = new RegExp(`(<${tag}(?:\\s[^>]*)?>)[\\s\\S]*?(</${tag}>)`, "gi");
     result = result.replace(pattern, "$1$2");

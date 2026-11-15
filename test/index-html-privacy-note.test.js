@@ -19,6 +19,13 @@ const BODY_END = "</body>";
 // 文言は句読点を含めて完全に一致しなければならない。
 const NOTE_LINE = new RegExp(`\\n[ \\t]*<p>${NOTE_TEXT}</p>`, "g");
 
+// issue #60 で変える script（type=module）と style の中身は、この比べ方の外にする（test/index-html-empty-input.test.js で確かめる）。
+function withoutScriptAndStyle(source) {
+  return source
+    .replace(/(<script type="module">)[\s\S]*?(<\/script>)/g, "$1$2")
+    .replace(/(<style>)[\s\S]*?(<\/style>)/g, "$1$2");
+}
+
 function count(source, text) {
   return source.split(text).length - 1;
 }
@@ -55,5 +62,5 @@ test("変更前の index.html には一文が無い", () => {
 
 test("index.html から一文の行を除くと、変更前と同じ（計算結果の表など、ほかの部分は変わらない）", () => {
   assert.equal([...html.matchAll(NOTE_LINE)].length, 1, "一文の行はちょうど1回");
-  assert.equal(html.replace(NOTE_LINE, ""), before);
+  assert.equal(withoutScriptAndStyle(html.replace(NOTE_LINE, "")), withoutScriptAndStyle(before));
 });
