@@ -1,0 +1,10 @@
+# terraform init で作られるもの
+.terraform/
+
+# 状態のファイル（秘密の値を含むことがあるので、リポジトリに入れない）
+*.tfstate
+*.tfstate.*
+
+# plan の出力
+*.tfplan
+tfplan
