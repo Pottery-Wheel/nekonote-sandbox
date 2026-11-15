@@ -11,3 +11,5 @@ Terraform が動く前に要るもの（AWS アカウント 184403881528、リ�
 - アプリのための Terraform とはディレクトリを分ける（アプリを反映する CI に IAM などの権限を持たせないため）。
 - CI では反映しない。PR をマージした後に、管理者が手元で `terraform init`・`terraform plan`・`terraform apply` を行う。
 - 認証情報は、ファイルには書かない。管理者の手元の AWS の認証情報（プロファイルや SSO など）を使う。
+- 状態（state）は、このディレクトリが管理する S3 バケット `nekonote-sandbox-tfstate-184403881528` の `bootstrap/terraform.tfstate` に置く。ロックは S3 だけのロック（`use_lockfile`）を使うので、Terraform 1.10 以降が要る。
+- `terraform destroy` は実行しない。状態を置いているバケットや、GitHub Actions が AWS に入るための OIDC の ID プロバイダーとロールが消える。
