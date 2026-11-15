@@ -32,4 +32,9 @@ resource "aws_iam_role" "prod_deploy" {
       }
     ]
   })
+
+  # 誤った terraform destroy や、作り直しになる変更を plan の段階で止める
+  lifecycle {
+    prevent_destroy = true
+  }
 }

@@ -8,6 +8,11 @@ import {
 
 resource "aws_s3_bucket" "tfstate" {
   bucket = "nekonote-sandbox-tfstate-184403881528"
+
+  # 誤った terraform destroy や、作り直しになる変更を plan の段階で止める
+  lifecycle {
+    prevent_destroy = true
+  }
 }
 
 # 操作 2：aws s3api put-public-access-block
@@ -23,6 +28,11 @@ resource "aws_s3_bucket_public_access_block" "tfstate" {
   ignore_public_acls      = true
   block_public_policy     = true
   restrict_public_buckets = true
+
+  # 誤った terraform destroy や、作り直しになる変更を plan の段階で止める
+  lifecycle {
+    prevent_destroy = true
+  }
 }
 
 # 操作 3：aws s3api put-bucket-versioning
@@ -37,6 +47,11 @@ resource "aws_s3_bucket_versioning" "tfstate" {
 
   versioning_configuration {
     status = "Enabled"
+  }
+
+  # 誤った terraform destroy や、作り直しになる変更を plan の段階で止める
+  lifecycle {
+    prevent_destroy = true
   }
 }
 
@@ -54,5 +69,10 @@ resource "aws_s3_bucket_server_side_encryption_configuration" "tfstate" {
     apply_server_side_encryption_by_default {
       sse_algorithm = "AES256"
     }
+  }
+
+  # 誤った terraform destroy や、作り直しになる変更を plan の段階で止める
+  lifecycle {
+    prevent_destroy = true
   }
 }
