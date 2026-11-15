@@ -416,16 +416,19 @@ async function loadPage() {
     tables() {
       return result.querySelectorAll("table");
     },
+    cards() {
+      return result.querySelectorAll(".card");
+    },
   };
   return page;
 }
 
-// 計算結果の表から「項目名 → 値」を取り出す。
-function tableRows(table) {
+// 計算結果のカードから「見出し → 値」を取り出す（issue #75 で、計算結果は表からカードに変わった）。
+function cardRows(page) {
   return Object.fromEntries(
-    table
-      .querySelectorAll("tr")
-      .map((row) => row.children.map((cell) => cell.textContent.trim())),
+    page
+      .cards()
+      .map((card) => [card.querySelector("dt").textContent.trim(), card.querySelector("dd").textContent.trim()]),
   );
 }
 
@@ -449,21 +452,23 @@ for (const [label, input] of BLANK_INPUTS) {
     const calls = await page.press(input);
     assert.deepEqual(calls, [], "計算（describe）を呼ばない（要件1）");
     assert.equal(page.tables().length, 0, "計算結果の表を表示しない（要件1）");
+    assert.equal(page.cards().length, 0, "計算結果のカードを表示しない（要件1）");
     assert.equal(page.text(), MESSAGE, `計算結果の欄の文言は「${MESSAGE}」だけ（要件2）`);
     assert.deepEqual(page.popups, [], "alert・confirm・prompt を使わない（要件3）");
     assert.deepEqual(page.document.dialogCalls, [], "dialog 要素を開かない（要件3）");
   });
 }
 
-test("計算結果の表が出ているときに入力欄を空にして計算ボタンを押すと、表は消えてメッセージだけになる", async () => {
+test("計算結果のカードが出ているときに入力欄を空にして計算ボタンを押すと、カードは消えてメッセージだけになる", async () => {
   const page = await loadPage();
   const firstCalls = await page.press("1 2 3");
   assert.deepEqual(firstCalls, [[1, 2, 3]], "数値があれば計算する");
-  assert.equal(page.tables().length, 1, "最初は計算結果の表が出ている");
+  assert.ok(page.cards().length > 0, "最初は計算結果のカードが出ている");
 
   const calls = await page.press("  \n ");
   assert.deepEqual(calls, [], "空のときは計算しない");
-  assert.equal(page.tables().length, 0, "前の計算結果の表は残らない");
+  assert.equal(page.cards().length, 0, "前の計算結果のカードは残らない");
+  assert.equal(page.tables().length, 0);
   assert.equal(page.text(), MESSAGE);
   assert.deepEqual(page.popups, []);
 });
@@ -486,8 +491,8 @@ test("メッセージが出た後に数値を入力して計算ボタンを押�
   const calls = await page.press("4 8 15");
   assert.deepEqual(calls, [[4, 8, 15]], "入力した数値で計算する");
   assert.ok(!page.text().includes(MESSAGE), "メッセージは残らない");
-  assert.equal(page.tables().length, 1, "計算結果の表がひとつ出る");
-  const rows = tableRows(page.tables()[0]);
+  assert.equal(page.cards().length, 12, "計算結果のカードが出る");
+  const rows = cardRows(page);
   assert.equal(rows["件数"], "3");
   assert.equal(rows["合計"], "27");
   assert.equal(rows["最小値"], "4");
@@ -503,16 +508,16 @@ test("スペースや改行だけでメッセージが出た後に、前後に�
   const calls = await page.press("  1, 2\n3  \n");
   assert.deepEqual(calls, [[1, 2, 3]]);
   assert.ok(!page.text().includes(MESSAGE), "メッセージは残らない");
-  assert.equal(page.tables().length, 1);
-  assert.equal(tableRows(page.tables()[0])["件数"], "3");
+  assert.equal(page.cards().length, 12);
+  assert.equal(cardRows(page)["件数"], "3");
 });
 
-test("数値を入力したときの計算結果は、これまでどおり表で表示する（空でない入力は今までと変わらない）", async () => {
+test("数値を入力したときの計算結果は、これまでどおり表示する（issue #75 からは表ではなくカード）", async () => {
   const page = await loadPage();
   const calls = await page.press("4 8 15 16 23 42");
   assert.deepEqual(calls, [[4, 8, 15, 16, 23, 42]]);
   assert.ok(!page.text().includes(MESSAGE));
-  const rows = tableRows(page.tables()[0]);
+  const rows = cardRows(page);
   assert.equal(rows["件数"], "6");
   assert.equal(rows["合計"], "108");
   assert.equal(rows["平均値"], "18");

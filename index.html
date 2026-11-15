@@ -7,9 +7,11 @@
     <style>
       body { font-family: system-ui, sans-serif; max-width: 40rem; margin: 2rem auto; padding: 0 1rem; }
       textarea { width: 100%; height: 6rem; }
-      table { border-collapse: collapse; margin-top: 1rem; }
-      th, td { border: 1px solid #ccc; padding: 0.25rem 0.75rem; text-align: left; }
       .error { color: #b00020; }
+      .cards { display: grid; grid-template-columns: repeat(auto-fill, minmax(8rem, 1fr)); gap: 0.75rem; margin: 1rem 0 0; }
+      .card { border: 1px solid #ccc; padding: 0.5rem 0.75rem; }
+      .card dt { margin: 0; }
+      .card dd { margin: 0.25rem 0 0; font-size: 1.5rem; font-weight: 700; line-height: 1.2; overflow-wrap: anywhere; }
     </style>
   </head>
   <body>
@@ -42,13 +44,19 @@
         const values = text.split(/[\s,]+/).map(Number);
         try {
           const stats = describe(values);
-          const table = document.createElement("table");
+          const cards = document.createElement("dl");
+          cards.className = "cards";
           for (const [key, value] of Object.entries(stats)) {
-            const row = table.insertRow();
-            row.insertCell().textContent = LABELS[key] ?? key;
-            row.insertCell().textContent = Array.isArray(value) ? value.join(", ") : String(value);
+            const card = document.createElement("div");
+            card.className = "card";
+            const term = document.createElement("dt");
+            term.textContent = LABELS[key] ?? key;
+            const detail = document.createElement("dd");
+            detail.textContent = Array.isArray(value) ? value.join(", ") : String(value);
+            card.append(term, detail);
+            cards.append(card);
           }
-          result.append(table);
+          result.append(cards);
         } catch (error) {
           const message = document.createElement("p");
           message.className = "error";
