@@ -1,0 +1,159 @@
+<!doctype html>
+<!--
+  デザイン案：issue #75 計算結果を、表の代わりに統計値ごとのカードで出す
+  （見本です。HTML と CSS だけで、動作はしません。）
+
+  ■ 変える部品
+  - #result の中身：今の「項目名｜値」の2列の表（table）をやめ、カードを並べた一覧にする（要件1・5）。
+      <dl class="cards">
+        <div class="card"><dt>件数</dt><dd>6</dd></div>
+        …（describe が返すオブジェクトの順に、統計値1つにつき1枚。要件3・4）
+      </dl>
+    - dt：統計値の見出し。文言は今の LABELS のまま（件数、合計、平均値、中央値、最頻値、最小値、最大値、
+      範囲、分散、標準偏差、第1四分位数、第3四分位数）。LABELS に無い key はそのまま出す（今と同じ）。
+    - dd：値。中身の文字は今の表の2列目と同じ（丸めない。配列の最頻値は「, 」でつなぐ。NaN は NaN）。
+      大きさだけを 1.5rem（24px）・太さ 700 にして「大きな数字」にする（要件2）。
+  - 足す CSS（新しい色は足さない。罫線は今の表と同じ #ccc を使う）：
+      .cards { display: grid; grid-template-columns: repeat(auto-fill, minmax(8rem, 1fr));
+               gap: 0.75rem; margin: 1rem 0 0; }
+      .card  { border: 1px solid #ccc; padding: 0.5rem 0.75rem; }
+      .card dt { margin: 0; }
+      .card dd { margin: 0.25rem 0 0; font-size: 1.5rem; font-weight: 700; line-height: 1.2;
+                 overflow-wrap: anywhere; }
+  - 消す CSS：table { … } と th, td { … }（表を出さなくなるので使わない）。
+  - そのままのもの：h1、説明文、textarea、「計算する」ボタン、「計算結果は、…統計値です。」の説明文、
+    エラーの <p class="error">、個人情報の注意書き。色・書体・余白の決まりは変えない。
+
+  ■ 折り返し（要件6）
+  - カードの幅は 8rem（128px）以上で、1行に入るだけ並べ、余った幅は等しく分ける。入らないカードは次の行へ。
+    メディアクエリは使わず、grid の auto-fill だけで決まる。
+    - 幅 1280px の画面（本文 640px）：1行に4枚（12枚で3行）。
+    - 幅 375px の画面（本文 343px）：1行に2枚（6行）。
+    - 幅 320px の画面（本文 288px）：1行に2枚。
+  - 値が長いとき（例：13.490737563232042）はカードの中で折り返す（overflow-wrap: anywhere）。
+    カードの外にははみ出さない。同じ行のカードは、いちばん高いカードに高さが揃う。
+
+  ■ 状態ごとの見え方（下に並べて見せる）
+  1. 計算できたとき：12枚のカードを表と同じ順に並べる。
+  2. 最頻値が複数・値が長いとき：最頻値は「2, 3」のように「, 」でつなぎ、長い値はカードの中で折り返す。
+  3. 数値が1つのとき：分散・標準偏差は今の表と同じく NaN を出す（文字を変えない）。
+  4. 入力欄が空のとき：カードは出さず、今と同じ <p class="error">「数値を入力してください」だけを出す。
+  5. describe がエラーを投げたとき：カードは出さず、今と同じ <p class="error"> に error.message を出す。
+  6. 幅の狭い画面（375px）：1行に2枚。
+  ※ エラーとカードが同時に出ることは無い（今と同じく replaceChildren() で前の結果を消す）。
+  ※ 見本の中の点線の枠と灰色の小さな注記（.mock-*）は、見本を説明するためだけのもので、実装には入れない。
+-->
+<html lang="ja">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>統計値の計算ツール</title>
+    <style>
+      /* ここから：実装に入れる CSS（今の index.html から table と th, td を消し、.cards と .card を足したもの） */
+      body { font-family: system-ui, sans-serif; max-width: 40rem; margin: 2rem auto; padding: 0 1rem; }
+      textarea { width: 100%; height: 6rem; }
+      .error { color: #b00020; }
+      .cards { display: grid; grid-template-columns: repeat(auto-fill, minmax(8rem, 1fr)); gap: 0.75rem; margin: 1rem 0 0; }
+      .card { border: 1px solid #ccc; padding: 0.5rem 0.75rem; }
+      .card dt { margin: 0; }
+      .card dd { margin: 0.25rem 0 0; font-size: 1.5rem; font-weight: 700; line-height: 1.2; overflow-wrap: anywhere; }
+      /* ここまで */
+
+      /* 見本の説明だけに使う（実装には入れない） */
+      .mock-state { margin-top: 2.5rem; padding-top: 0.5rem; border-top: 1px dashed #999; }
+      .mock-caption { margin: 0; font-size: 0.8125rem; color: #666; }
+      .mock-narrow { width: 343px; outline: 1px dashed #999; }
+    </style>
+  </head>
+  <body>
+    <h1>統計値の計算ツール</h1>
+    <p>数値をカンマか空白で区切って入力してください。（例：4 8 15）</p>
+    <textarea id="values">4 8 15 16 23 42</textarea>
+    <p><button id="calc" type="button">計算する</button></p>
+    <p>計算結果は、入力した数値から計算した統計値です。</p>
+    <div id="result">
+      <p class="mock-caption">状態1：計算できたとき（入力「4 8 15 16 23 42」）</p>
+      <dl class="cards">
+        <div class="card"><dt>件数</dt><dd>6</dd></div>
+        <div class="card"><dt>合計</dt><dd>108</dd></div>
+        <div class="card"><dt>平均値</dt><dd>18</dd></div>
+        <div class="card"><dt>中央値</dt><dd>15.5</dd></div>
+        <div class="card"><dt>最頻値</dt><dd>4, 8, 15, 16, 23, 42</dd></div>
+        <div class="card"><dt>最小値</dt><dd>4</dd></div>
+        <div class="card"><dt>最大値</dt><dd>42</dd></div>
+        <div class="card"><dt>範囲</dt><dd>38</dd></div>
+        <div class="card"><dt>分散</dt><dd>182</dd></div>
+        <div class="card"><dt>標準偏差</dt><dd>13.490737563232042</dd></div>
+        <div class="card"><dt>第1四分位数</dt><dd>9.75</dd></div>
+        <div class="card"><dt>第3四分位数</dt><dd>21.25</dd></div>
+      </dl>
+    </div>
+    <p>入力した数値は、このページの中だけで計算し、外部には送りません。</p>
+
+    <section class="mock-state">
+      <p class="mock-caption">状態2：最頻値が複数・値が長いとき（入力「1 2 2 3 3」）</p>
+      <dl class="cards">
+        <div class="card"><dt>件数</dt><dd>5</dd></div>
+        <div class="card"><dt>合計</dt><dd>11</dd></div>
+        <div class="card"><dt>平均値</dt><dd>2.2</dd></div>
+        <div class="card"><dt>中央値</dt><dd>2</dd></div>
+        <div class="card"><dt>最頻値</dt><dd>2, 3</dd></div>
+        <div class="card"><dt>最小値</dt><dd>1</dd></div>
+        <div class="card"><dt>最大値</dt><dd>3</dd></div>
+        <div class="card"><dt>範囲</dt><dd>2</dd></div>
+        <div class="card"><dt>分散</dt><dd>0.7</dd></div>
+        <div class="card"><dt>標準偏差</dt><dd>0.8366600265340756</dd></div>
+        <div class="card"><dt>第1四分位数</dt><dd>2</dd></div>
+        <div class="card"><dt>第3四分位数</dt><dd>3</dd></div>
+      </dl>
+    </section>
+
+    <section class="mock-state">
+      <p class="mock-caption">状態3：数値が1つのとき（入力「7」）</p>
+      <dl class="cards">
+        <div class="card"><dt>件数</dt><dd>1</dd></div>
+        <div class="card"><dt>合計</dt><dd>7</dd></div>
+        <div class="card"><dt>平均値</dt><dd>7</dd></div>
+        <div class="card"><dt>中央値</dt><dd>7</dd></div>
+        <div class="card"><dt>最頻値</dt><dd>7</dd></div>
+        <div class="card"><dt>最小値</dt><dd>7</dd></div>
+        <div class="card"><dt>最大値</dt><dd>7</dd></div>
+        <div class="card"><dt>範囲</dt><dd>0</dd></div>
+        <div class="card"><dt>分散</dt><dd>NaN</dd></div>
+        <div class="card"><dt>標準偏差</dt><dd>NaN</dd></div>
+        <div class="card"><dt>第1四分位数</dt><dd>7</dd></div>
+        <div class="card"><dt>第3四分位数</dt><dd>7</dd></div>
+      </dl>
+    </section>
+
+    <section class="mock-state">
+      <p class="mock-caption">状態4：入力欄が空のとき（カードは出さない。今と同じ）</p>
+      <p class="error">数値を入力してください</p>
+    </section>
+
+    <section class="mock-state">
+      <p class="mock-caption">状態5：describe がエラーを投げたとき（入力「4 abc」。カードは出さない。今と同じ）</p>
+      <p class="error">values には有限の数値だけを入れてください</p>
+    </section>
+
+    <section class="mock-state">
+      <p class="mock-caption">状態6：幅の狭い画面（幅 375px の画面の本文の幅 343px）。1行に2枚</p>
+      <div class="mock-narrow">
+        <dl class="cards">
+          <div class="card"><dt>件数</dt><dd>6</dd></div>
+          <div class="card"><dt>合計</dt><dd>108</dd></div>
+          <div class="card"><dt>平均値</dt><dd>18</dd></div>
+          <div class="card"><dt>中央値</dt><dd>15.5</dd></div>
+          <div class="card"><dt>最頻値</dt><dd>4, 8, 15, 16, 23, 42</dd></div>
+          <div class="card"><dt>最小値</dt><dd>4</dd></div>
+          <div class="card"><dt>最大値</dt><dd>42</dd></div>
+          <div class="card"><dt>範囲</dt><dd>38</dd></div>
+          <div class="card"><dt>分散</dt><dd>182</dd></div>
+          <div class="card"><dt>標準偏差</dt><dd>13.490737563232042</dd></div>
+          <div class="card"><dt>第1四分位数</dt><dd>9.75</dd></div>
+          <div class="card"><dt>第3四分位数</dt><dd>21.25</dd></div>
+        </dl>
+      </div>
+    </section>
+  </body>
+</html>
