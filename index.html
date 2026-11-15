@@ -32,7 +32,14 @@
         const result = document.getElementById("result");
         result.replaceChildren();
         const text = document.getElementById("values").value.trim();
-        const values = text === "" ? [] : text.split(/[\s,]+/).map(Number);
+        if (text === "") {
+          const message = document.createElement("p");
+          message.className = "error";
+          message.textContent = "数値を入力してください";
+          result.append(message);
+          return;
+        }
+        const values = text.split(/[\s,]+/).map(Number);
         try {
           const stats = describe(values);
           const table = document.createElement("table");
