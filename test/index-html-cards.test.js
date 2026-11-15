@@ -593,6 +593,45 @@ test("カードは計算結果の欄の中で、ひとつの並び（class=\"car
   );
 });
 
+// 要素を画面から隠す書き方（hidden 属性、style 属性、当たっている CSS）が無いかを確かめる。
+function assertVisible(rules, element, name) {
+  assert.equal(element.hidden, false, `${name}に hidden を付けない`);
+  assert.equal(element.hasAttribute("hidden"), false, `${name}に hidden 属性を付けない`);
+  const inline = [element.getAttribute("style") ?? "", element.style.cssText ?? ""].join(";");
+  assert.doesNotMatch(inline, /display\s*:\s*none|visibility\s*:\s*(hidden|collapse)/i, `${name}の style 属性で隠さない`);
+  assert.notEqual(String(element.style.display ?? "").trim(), "none", `${name}の style.display を none にしない`);
+  assert.doesNotMatch(String(element.style.visibility ?? ""), /hidden|collapse/, `${name}の style.visibility で隠さない`);
+  const declarations = declarationsFor(rules, element);
+  assert.doesNotMatch(String(declarations.display ?? ""), /^none\b/i, `${name}に当たる CSS に display: none が無い`);
+  assert.doesNotMatch(
+    String(declarations.visibility ?? ""),
+    /^(hidden|collapse)\b/i,
+    `${name}に当たる CSS に visibility: hidden が無い`,
+  );
+  if (declarations.opacity !== undefined) {
+    assert.notEqual(Number(declarations.opacity), 0, `${name}に当たる CSS で opacity を 0 にしない`);
+  }
+}
+
+test("カードの並びとカード（見出しと値も）を、hidden 属性や CSS で隠さない（要件1・2）", async () => {
+  const page = await loadPage(html);
+  for (const input of ["4 8 15 16 23 42", "1 2 3"]) {
+    await page.press(input);
+    const rules = styleRules(html);
+    assertVisible(rules, page.result, "計算結果の欄（#result）");
+    const container = page.result.querySelector(".cards");
+    assert.ok(container, "カードの並びがある");
+    assertVisible(rules, container, "カードの並び（.cards）");
+    const list = cards(page.result);
+    assert.equal(list.length, 12);
+    for (const card of list) {
+      assertVisible(rules, card, "カード（.card）");
+      assertVisible(rules, card.querySelector("dt"), "カードの見出し（dt）");
+      assertVisible(rules, card.querySelector("dd"), "カードの値（dd）");
+    }
+  }
+});
+
 test("計算し直すと、前のカードは残らず、新しい計算結果のカードだけになる", async () => {
   const page = await loadPage(html);
   await page.press("4 8 15 16 23 42");
