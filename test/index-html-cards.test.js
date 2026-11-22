@@ -401,11 +401,15 @@ function cardEntries(result) {
   });
 }
 
+// 画面に出さない統計値の key（#86 で describe に足した iqr は、画面には出さない）。
+const HIDDEN_KEYS = ["iqr"];
+
 // 変更前のページで同じ入力を計算したときの表の中身。
+// 変更前のページは describe の返り値をすべて表に出すので、画面に出さない key の行は除く。
 async function beforeEntries(input) {
   const page = await loadPage(before);
   await page.press(input);
-  return tableEntries(page.result);
+  return tableEntries(page.result).filter(([label]) => !HIDDEN_KEYS.includes(label));
 }
 
 const INPUTS = [
@@ -543,7 +547,10 @@ function cardsPerRow(container, card, width) {
 for (const [label, input] of INPUTS) {
   test(`計算結果は表ではなくカードで出し、変更前の表と同じ統計値を同じ順に1枚ずつ、同じ見出しと値で出す（${label}）（要件1〜5）`, async () => {
     const expected = await beforeEntries(input);
-    assert.equal(expected.length, Object.keys(describe(input.split(/[\s,]+/).map(Number))).length);
+    assert.equal(
+      expected.length,
+      Object.keys(describe(input.split(/[\s,]+/).map(Number))).filter((key) => !HIDDEN_KEYS.includes(key)).length,
+    );
 
     const page = await loadPage(html);
     await page.press(input);

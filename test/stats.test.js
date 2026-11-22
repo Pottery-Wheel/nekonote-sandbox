@@ -17,6 +17,7 @@ const KEYS = [
   "stdDev",
   "q1",
   "q3",
+  "iqr",
 ].sort();
 
 // 浮動小数点の誤差を許して比べる

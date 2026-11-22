@@ -47,6 +47,7 @@
           const cards = document.createElement("dl");
           cards.className = "cards";
           for (const [key, value] of Object.entries(stats)) {
+            if (key === "iqr") continue;
             const card = document.createElement("div");
             card.className = "card";
             const term = document.createElement("dt");

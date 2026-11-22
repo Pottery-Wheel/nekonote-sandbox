@@ -29,7 +29,7 @@ function modes(sorted) {
  * 数値の配列の統計値をまとめて返す。入力の配列は書き換えない。
  * @param {number[]} values 1つ以上の有限の数値
  * @returns {{count:number,sum:number,mean:number,median:number,mode:number[],
- *   min:number,max:number,range:number,variance:number,stdDev:number,q1:number,q3:number}}
+ *   min:number,max:number,range:number,variance:number,stdDev:number,q1:number,q3:number,iqr:number}}
  */
 export function describe(values) {
   if (!Array.isArray(values)) {
@@ -56,6 +56,9 @@ export function describe(values) {
       ? sorted.reduce((total, value) => total + (value - mean) ** 2, 0) / (count - 1)
       : NaN;
 
+  const q1 = quantile(sorted, 0.25);
+  const q3 = quantile(sorted, 0.75);
+
   return {
     count,
     sum,
@@ -67,7 +70,8 @@ export function describe(values) {
     range: max - min,
     variance,
     stdDev: Math.sqrt(variance),
-    q1: quantile(sorted, 0.25),
-    q3: quantile(sorted, 0.75),
+    q1,
+    q3,
+    iqr: q3 - q1,
   };
 }
